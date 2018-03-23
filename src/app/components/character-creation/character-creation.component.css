@@ -1,0 +1,54 @@
+.container-fluid {
+    background: rgba(255, 255, 255, 0.25);
+    height: 100vh;
+}
+
+.sidebar {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar ul {
+    list-style-type: none;
+    text-indent: 0;
+    padding: 0;
+}
+
+.sidebar li {
+    cursor: pointer;
+    display: block;
+    background: rgb(210, 217, 223);
+    color: black;
+    border-radius: 7px;
+}
+
+.sidebar li.active {
+    background: rgb(210, 217, 223, 0.2);
+}
+
+.gender-button {
+    cursor: pointer;
+    display: block;
+    background: rgb(210, 217, 223);
+    border-radius: 7px;
+    width: 50px;
+    font-size: 30px;
+}
+
+.gender-button.active {
+    background: rgb(210, 217, 223, 0.2);
+}
+
+.continue-button {
+    display: block;
+    cursor: pointer;
+    color: black;
+    background: rgb(210, 217, 223);
+    border: none;
+    border-radius: 7px;
+}
+
+.continue-button.disabled {
+    background: rgb(210, 217, 223, 0.9);
+    border: 3px solid  rgba(183, 190, 196, 0.5);
+    cursor: auto;
+}
