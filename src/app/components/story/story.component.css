@@ -1,0 +1,19 @@
+.story-component-page {
+    height: 100vh;
+}
+
+.story-content {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 7px;
+    overflow-y: auto;
+}
+
+.encounter-option {
+    cursor: pointer;
+    opacity: .5;
+}
+
+.options-bar {
+    background: rgba(183, 190, 196, 0.5);
+    border-top: rgba(183, 190, 196, 0.9);
+}
