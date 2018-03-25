@@ -31,7 +31,7 @@ export enum CharacterSkills {
 
 export enum FightOptions {
     attack = "Attack",
-    specialAttacl = "Special Attack",
+    specialAttack = "Special Attack",
     none = "None"
 }
 
