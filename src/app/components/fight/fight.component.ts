@@ -90,17 +90,130 @@ export class FightComponent {
         }
 
         if (this.currentCharacter instanceof Monster && target instanceof Hero){
+            if (target.hasTrapDefence) {
+                this.currentCharacter.isTrapped = true;
+
+                if (target.hasDamagingTrap) {
+                    let damage = Math.floor(Math.random() * 8) + 1;
+                    this.currentCharacter.currentHealth -= damage;
+                    this.displayMessage = `${target.name} was protected by a trap. ${this.currentCharacter.name} is stuck in the trap, takink ${damage} damage.`;
+                    if (this.currentCharacter.currentHealth <= 0) {
+                        this.currentCharacter.isIncapacitated = true;
+                        this.enemiesIncapacitated++;
+                    }
+                } else {
+                    this.displayMessage = `${target.name} was protected by a trap. ${this.currentCharacter.name}`
+                }
+
+                target.hasTrapDefence = false;
+                target.hasDamagingTrap = false;
+                setTimeout(() => {
+                    this.checkIfWin();
+                }, this.actionDelay);
+                return;
+            }
         }
 
         if (this.selectedAction === FightOptions.attack) {
             this.freezeActions = true;
             this.attack(target);
-        } else if (this.currentCharacter instanceof Hero){
+        } else if (this.currentCharacter instanceof Hero
+            && this.currentCharacter.level > 2
+            && this.selectedAction === FightOptions.specialAttack){
+                const upgraded: boolean = this.currentCharacter.level > 5;
 
+                if (this.currentCharacter instanceof Warrior) {
+                    this.warriorSpecialAttack(target, upgraded);
+                }
+                if (this.currentCharacter instanceof Ranger) {
+                    this.rangerSpecialAttack(target, upgraded);
+                }
+                if (this.currentCharacter instanceof Rogue) {
+                    this.rogueSpecialAttacl(target, upgraded);
+                }
+                if (this.currentCharacter instanceof Priest) {
+                    this.priestSpecialAttack(target, upgraded);
+                }
         } else {
             this.displayMessage = "Please select an action option.";
         }
     }
+
+    warriorSpecialAttack(target: BaseCharacter, upgraded: boolean) {
+        if (!(target instanceof Monster)) {
+            this.displayMessage = `Only enemies can be targeted for a warrior's special attack.`;
+            return;
+        }
+
+        this.selectedTargets.push(target);
+
+        if(this.selectedTargets.length < 2) {
+            this.displayMessage = `Select a second target for your warrior special attack.`;
+        } else if(this.currentCharacter instanceof Hero) {
+            this.freezeActions = true;
+            this.currentCharacter.turnsUntilSpecialAvailableAgain = this.turnsBetweenSpecial;
+            var doubleAttackPenalty = upgraded ? 0 : 4;
+            var firstTarget: BaseCharacter = this.selectedTargets[0];
+            var secondTarget: BaseCharacter = this.selectedTargets[1];
+
+            if (this.currentCharacter.attack() - doubleAttackPenalty >= firstTarget.barriers.attack) {
+                let damage = this.currentCharacter.dealDamage();
+                this.displayMessage = `${this.currentCharacter.name} hit ${firstTarget.name} dealing ${damage} damage.`;
+                if (firstTarget.currentHealth <= 0) {
+                    firstTarget.isIncapacitated = true;
+                    this.enemiesIncapacitated++;
+                }
+            } else {
+                this.displayMessage = `${this.currentCharacter.name} Missed.`;
+            }
+
+            setTimeout(() => {
+                if (this.currentCharacter.attack() - doubleAttackPenalty >= secondTarget.barriers.attack) {
+                    let damage = this.currentCharacter.dealDamage();
+                    secondTarget.currentHealth -= damage;
+                    this.displayMessage = `${this.currentCharacter.name} hit ${secondTarget.name} dealing ${damage} damage.`
+                    if (secondTarget.currentHealth <= 0 && !secondTarget.isIncapacitated) {
+                        secondTarget.isIncapacitated = true;
+                        this.enemiesIncapacitated++;
+                    }
+                } else {
+                    this.displayMessage = `${this.currentCharacter.name} Missed.`;
+                }
+
+                setTimeout(() => {
+                    this.selectedTargets = [];
+                    this.checkIfWin();
+                }, this.actionDelay);
+            }, this.actionDelay);
+        }
+    }
+
+    rangerSpecialAttack(target: BaseCharacter, upgraded: boolean) {
+        if (!(target instanceof Hero)) {
+            this.displayMessage = `Only enemies can be targeted for a ranger's special attack.`;
+            return;
+        }
+
+        if (target.hasTrapDefence) {
+            this.displayMessage = `Target hero alredy has a trap defense in place.`;
+            return;
+        }
+        this.freezeActions = true;
+        if (this.currentCharacter instanceof Hero) {
+            this.currentCharacter.turnsUntilSpecialAvailableAgain = this.turnsBetweenSpecial;
+        }
+        this.displayMessage = `${this.currentCharacter.name} set up a trap to protect `;
+        target.hasTrapDefence = true;
+        target.hasDamagingTrap = upgraded;
+        setTimeout(() => {
+            this.nextTurn();
+        }, this.actionDelay);
+    }
+
+
+    rogueSpecialAttack(target: BaseCharacter, upgraded: boolean) {}
+
+    priestSpeccialAttack(target: BaseCharacter, upgraded: boolean) {}
 
     attack(target: BaseCharacter) {
         this.availableTargets = Teams.none;
@@ -125,6 +238,89 @@ export class FightComponent {
         }
     }
 
-    checkIfWin() {}
-    nextTurn() {}
+    checkIfWin() {
+        this.selectedAction = FightOptions.none;
+        if (this.enemiesIncapacitated === this.enemyParty.length) {
+            this.displayMessage = `All enemies have been defeated"`;
+            this.showNextChapterButton = true;
+            this.gameControllerService.isFighthing = false;
+            return;
+        }
+        if (this.heroesIncapacitated === this.heroParty.length) {
+            this.displayMessage = `All heroes have been defeated`;
+            this.showGameOverButton = true;
+            this.gameControllerService.isFighthing = false;
+            return;
+        }
+        this.nextTurn();
+    }
+
+    nextTurn() {
+        if (this.currentCharacter instanceof Monster) {}
+        if (this.currentCharacter instanceof Monster && this.currentCharacter.hasTakenPoisonDamageThisTurn) {}
+
+        this.availableTargets = Teams.none;
+        this.selectedAction = FightOptions.none;
+        this.characterIndex++;
+        let nextCharacter;
+
+        if (this.heroTurn) {
+            nextCharacter = this.heroParty[this.characterIndex];
+        } else {
+            nextCharacter = this.enemyParty[this.characterIndex];
+        }
+
+        if (nextCharacter) {
+            if (!nextCharacter.isIncapacitated) {
+                this.currentCharacter = nextCharacter;
+                this.displayMessage = `It's ${this.currentCharacter.name}'s turn.`;
+                if (this.currentCharacter instanceof Hero) {
+                    this.freezeActions = false;
+                    if (this.currentCharacter.turnsUntilSpecialAvailableAgain){
+                        this.currentCharacter.turnsUntilSpecialAvailableAgain--;
+                    }
+                } else {
+                    setTimeout(() => {
+                        this.takeEnemyTurn();
+                    }, this.actionDelay);
+                }
+            } else {
+                this.nextTurn();
+            }
+        } else {
+            this.heroTurn = this.heroTurn;
+            this.characterIndex -= 1;
+            this.nextTurn();
+        }
+    }
+
+    takeEnemyTurn() {
+        if (this.currentCharacter instanceof Monster && this.currentCharacter.isTrapped){
+        } else {
+            let target: Hero;
+            this.selectedAction = FightOptions.attack;
+
+            while(!target) {
+                let randomTargetIndex = Math.floor(Math.random() * this.heroParty.length);
+                let potentialTarget = this.heroParty[randomTargetIndex];
+                if (!potentialTarget.isIncapacitated) {
+                    target = potentialTarget;
+                }
+            }
+            this.displayMessage = `${this.currentCharacter.name} attacks ${target.name}`;
+
+            setTimeout(() => {
+                this.tryAttack(target);
+            }, this.actionDelay);
+        }
+    }
+
+    nextChapter() {
+        this.gameControllerService.nextChapter();
+        this.router.navigateByUrl("/story");
+    }
+
+    gameOver() {
+        this.gameControllerService.gameOver();
+    }
 }
